@@ -175,7 +175,7 @@ struct buf buf_cat_str_argb(struct buf b, void *abstract_src, int len)
 struct buf buf_cat_str_a8(struct buf b, void *abstract_src, int len)
 {
 	struct buf r;
-	unsigned char *src = (unsigned short *)abstract_src;
+	unsigned char *src = (unsigned char *)abstract_src;
 	char *dest;
 	r.data = (char *)realloc(b.data, b.len + len);
 	dest = r.data + b.len;
