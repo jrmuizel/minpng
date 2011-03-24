@@ -307,7 +307,7 @@ struct buf make_png(void *d, int width, int height, int stride, data_cat_fn buf_
 		idat = buf_cat_str(idat, predictor, sizeof(predictor));
 		data = buf_cat_str_data(data, d, width*4);
 		idat = buf_cat_str_data(idat, d, width*4);
-		(char*)d += stride;
+		d = (char*)d + stride;
 	}
 	idat = buf_cat(idat, be32(adler32((unsigned char *)data.data, data.len)));
 
