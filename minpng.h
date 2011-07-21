@@ -24,6 +24,8 @@
 #include <string.h>
 #include <stdio.h>
 
+L
+
 /* PNG specification Annex D */
 
 /* Table of CRCs of all 8-bit messages. */
