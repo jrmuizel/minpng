@@ -318,20 +318,20 @@ struct buf make_png(void *d, int width, int height, int stride, data_cat_fn buf_
 }
 
 void write_png(const char *name, void *d, int width, int height) {
-	FILE *f = fopen(name, "w+");
+	FILE *f = fopen(name, "wb+");
 	struct buf png = make_png(d, width, height, 4*width, buf_cat_str_argb);
 	fwrite(png.data, png.len, 1, f);
 	fclose(f);
 }
 
 void write_png_a8(const char *name, void *d, int width, int height, int stride) {
-	FILE *f = fopen(name, "w+");
+	FILE *f = fopen(name, "wb+");
 	struct buf png = make_png(d, width, height, stride, buf_cat_str_a8);
 	fwrite(png.data, png.len, 1, f);
 	fclose(f);
 }
 void write_png_rgb(const char *name, void *d, int width, int height, int stride) {
-	FILE *f = fopen(name, "w+");
+	FILE *f = fopen(name, "wb+");
 	struct buf png = make_png(d, width, height, stride, buf_cat_str_rgb);
 	fwrite(png.data, png.len, 1, f);
 	fclose(f);
@@ -339,7 +339,7 @@ void write_png_rgb(const char *name, void *d, int width, int height, int stride)
 
 
 void write_png_565(const char *name, void *d, int width, int height, int stride) {
-	FILE *f = fopen(name, "w+");
+	FILE *f = fopen(name, "wb+");
 	struct buf png = make_png(d, width, height, stride, buf_cat_str_565);
 	fwrite(png.data, png.len, 1, f);
 	fclose(f);
