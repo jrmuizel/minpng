@@ -233,22 +233,67 @@ struct buf be32(int a)
 	return r;
 }
 
+struct adler {
+	int a; // 1
+	int b; // 0
+};
+
 #define MOD_ADLER 65521
-/* From Wikipedia */
+
+
 unsigned int adler32(unsigned char *data, size_t len) /* data: Pointer to the data to be summed; len is in bytes */
 {
-	    unsigned int a = 1, b = 0;
+	unsigned int a = 1, b = 0;
 
+	while (len != 0)
+	{
+		a = (a + *data++) % MOD_ADLER;
+		b = (b + a) % MOD_ADLER;
+
+		len--;
+	}
+
+	return (b << 16) | a;
+}
+/* From Wikipedia */
+struct adler adler32_str(struct adler ctx, char *data, size_t len) /* data: Pointer to the data to be summed; len is in bytes */
+{
 	    while (len != 0)
 	    {
-		    a = (a + *data++) % MOD_ADLER;
-		    b = (b + a) % MOD_ADLER;
+		    ctx.a = (ctx.a + *data++) % MOD_ADLER;
+		    ctx.b = (ctx.b + ctx.a) % MOD_ADLER;
 
 		    len--;
 	    }
 
-	    return (b << 16) | a;
+	    return ctx;
 }
+
+struct adler adler32_buf(struct adler ctx, struct buf b) /* data: Pointer to the data to be summed; len is in bytes */
+{
+	int i=0;
+	    while (i != b.len)
+	    {
+		    ctx.a = (ctx.a + b.data[i++]) % MOD_ADLER;
+		    ctx.b = (ctx.b + ctx.a) % MOD_ADLER;
+	    }
+
+	    return ctx;
+}
+
+struct adler adler32_init()
+{
+	struct adler ret;
+	ret.a = 1;
+	ret.b = 0;
+	return ret;
+}
+
+unsigned int adler32_fin(struct adler ctx)
+{
+	return (ctx.b << 16) | ctx.a;
+}
+
 
 /* 16bit length in little endian followed by
  * ones compliment of length in little endian */
@@ -282,7 +327,7 @@ struct buf make_png(void *d, int width, int height, int stride, data_cat_fn buf_
 	char png_start[] = {0x89,'P','N','G','\r','\n',0x1A,'\n'};
 	struct buf ihdr = {0};
 	int block_length = (width*4 + 1);
-	struct buf idat = {0}, data = {0}, iend = {0};
+	struct buf idat = {0}, iend = {0};
 	int i;
 	assert(block_length <= 65535);
 
@@ -296,20 +341,26 @@ struct buf make_png(void *d, int width, int height, int stride, data_cat_fn buf_
 
 	idat = buf_cat_str(idat, zlib_prefix, sizeof(zlib_prefix));
 
+	struct adler chksum = adler32_init();
 	for (i=0; i<height; i++) {
+		struct buf row_data = {0};
 		if (i == height - 1)
 			idat = buf_cat_str(idat, zlib_final_block_prefix, sizeof(zlib_final_block_prefix));
 		else
 			idat = buf_cat_str(idat, zlib_block_prefix, sizeof(zlib_block_prefix));
 
 		idat = buf_cat(idat, zlib_block_length(block_length));
-		data = buf_cat_str(data, predictor, sizeof(predictor));
+		chksum = adler32_str(chksum, predictor, sizeof(predictor));
 		idat = buf_cat_str(idat, predictor, sizeof(predictor));
-		data = buf_cat_str_data(data, d, width*4);
+
+		row_data = buf_cat_str_data(row_data, d, width*4);
+		chksum = adler32_buf(chksum, row_data);
 		idat = buf_cat_str_data(idat, d, width*4);
+		free(row_data.data);
 		d = (char*)d + stride;
 	}
-	idat = buf_cat(idat, be32(adler32((unsigned char *)data.data, data.len)));
+	// be32 leaks
+	idat = buf_cat(idat, be32(adler32_fin(chksum)));
 
 	r = buf_cat(r, chunk("IDAT", idat));
 
