@@ -77,7 +77,7 @@ unsigned long crc(unsigned char *buf, int len)
 	return update_crc(0xffffffffL, buf, len) ^ 0xffffffffL;
 }
 
-char *write_be32(char *buf, int a)
+unsigned char *write_be32(unsigned char *buf, int a)
 {
 	buf[0] = (a>>24) & 0xff;
 	buf[1] = (a>>16) & 0xff;
@@ -88,15 +88,15 @@ char *write_be32(char *buf, int a)
 
 struct buf
 {
-	char *data;
+	unsigned char *data;
 	int len;
 };
 
-struct buf chunk(char *type, struct buf q)
+struct buf chunk(const char *type, struct buf q)
 {
 	struct buf b;
-	char *t = (char *)malloc(4 + 4 + q.len + 4);
-	char *chunk_start;
+	unsigned char *t = (unsigned char *)malloc(4 + 4 + q.len + 4);
+	unsigned char *chunk_start;
 	b.data = t;
 	t = write_be32(t, q.len);
 	chunk_start = t;
@@ -110,16 +110,16 @@ struct buf chunk(char *type, struct buf q)
 	t += q.len;
 	free(q.data);
 
-	t = write_be32(t, crc((unsigned char *)chunk_start, q.len + 4));
+	t = write_be32(t, crc(chunk_start, q.len + 4));
 
 	b.len = 4 + 4 + q.len + 4;
 	return b;
 }
 
-struct buf buf_cat_str(struct buf b, char *d, int len)
+struct buf buf_cat_str(struct buf b, unsigned char *d, int len)
 {
 	struct buf r;
-	r.data = (char *)realloc(b.data, b.len + len);
+	r.data = (unsigned char *)realloc(b.data, b.len + len);
 	memcpy(r.data + b.len, d, len);
 	r.len = b.len + len;
 	return r;
@@ -130,16 +130,16 @@ struct buf buf_cat_str_rgb(struct buf b, void *abstract_src, int len)
 {
 	unsigned int *src = (unsigned int *)abstract_src;
 	struct buf r;
-	char *dest;
-	r.data = (char *)realloc(b.data, b.len + len);
+	unsigned char *dest;
+	r.data = (unsigned char *)realloc(b.data, b.len + len);
 	dest = r.data + b.len;
 	r.len = b.len + len;
 	while (len) {
 		/* we probably need to unpremultiply here */
-		char alpha = 0xff;
-		char red   = (*src >> 16) & 0xff;
-		char green = (*src >> 8) & 0xff;
-		char blue  = (*src >> 0) & 0xff;
+		unsigned char alpha = 0xff;
+		unsigned char red   = (*src >> 16) & 0xff;
+		unsigned char green = (*src >> 8) & 0xff;
+		unsigned char blue  = (*src >> 0) & 0xff;
 		*dest++ = red;
 		*dest++ = green;
 		*dest++ = blue;
@@ -153,16 +153,16 @@ struct buf buf_cat_str_argb(struct buf b, void *abstract_src, int len)
 {
 	unsigned int *src = (unsigned int *)abstract_src;
 	struct buf r;
-	char *dest;
-	r.data = (char *)realloc(b.data, b.len + len);
+	unsigned char *dest;
+	r.data = (unsigned char *)realloc(b.data, b.len + len);
 	dest = r.data + b.len;
 	r.len = b.len + len;
 	while (len) {
 		/* we probably need to unpremultiply here */
-		char alpha = (*src >> 24) & 0xff;
-		char red   = (*src >> 16) & 0xff;
-		char green = (*src >> 8) & 0xff;
-		char blue  = (*src >> 0) & 0xff;
+		unsigned char alpha = (*src >> 24) & 0xff;
+		unsigned char red   = (*src >> 16) & 0xff;
+		unsigned char green = (*src >> 8) & 0xff;
+		unsigned char blue  = (*src >> 0) & 0xff;
 		*dest++ = red;
 		*dest++ = green;
 		*dest++ = blue;
@@ -176,8 +176,8 @@ struct buf buf_cat_str_a8(struct buf b, void *abstract_src, int len)
 {
 	struct buf r;
 	unsigned char *src = (unsigned char *)abstract_src;
-	char *dest;
-	r.data = (char *)realloc(b.data, b.len + len);
+	unsigned char *dest;
+	r.data = (unsigned char *)realloc(b.data, b.len + len);
 	dest = r.data + b.len;
 	r.len = b.len + len;
 	while (len) {
@@ -199,8 +199,8 @@ struct buf buf_cat_str_565(struct buf b, void *abstract_src, int len)
 {
 	struct buf r;
 	unsigned short *src = (unsigned short *)abstract_src;
-	char *dest;
-	r.data = (char *)realloc(b.data, b.len + len);
+	unsigned char *dest;
+	r.data = (unsigned char *)realloc(b.data, b.len + len);
 	dest = r.data + b.len;
 	r.len = b.len + len;
 	while (len) {
@@ -227,7 +227,7 @@ struct buf buf_cat(struct buf b, struct buf c)
 struct buf be32(int a)
 {
 	struct buf r;
-	r.data = (char *)malloc(4);
+	r.data = (unsigned char *)malloc(4);
 	r.len = 4;
 	write_be32(r.data, a);
 	return r;
@@ -256,7 +256,7 @@ unsigned int adler32(unsigned char *data, size_t len) /* data: Pointer to the da
 	return (b << 16) | a;
 }
 /* From Wikipedia */
-struct adler adler32_str(struct adler ctx, char *data, size_t len) /* data: Pointer to the data to be summed; len is in bytes */
+struct adler adler32_str(struct adler ctx, unsigned char *data, size_t len) /* data: Pointer to the data to be summed; len is in bytes */
 {
 	    while (len != 0)
 	    {
@@ -300,7 +300,7 @@ unsigned int adler32_fin(struct adler ctx)
 struct buf zlib_block_length(int length)
 {
 	struct buf r;
-	r.data = (char *)malloc(4);
+	r.data = (unsigned char *)malloc(4);
 	r.len = 4;
 
 	r.data[0] = length & 0xff;
@@ -319,12 +319,12 @@ struct buf zlib_block_length(int length)
 struct buf make_png(void *d, int width, int height, int stride, data_cat_fn buf_cat_str_data)
 {
 	struct buf r = {0};
-	char predictor[] = {0x0};
-	char zlib_prefix[] = {0x78,0x9c};
-	char zlib_final_block_prefix[] = {0x01};
-	char zlib_block_prefix[] = {0x00};
-	char hdr_tail[] = {0x08,0x06,0x00,0x00,0x00};
-	char png_start[] = {0x89,'P','N','G','\r','\n',0x1A,'\n'};
+	unsigned char predictor[] = {0x0};
+	unsigned char zlib_prefix[] = {0x78,0x9c};
+	unsigned char zlib_final_block_prefix[] = {0x01};
+	unsigned char zlib_block_prefix[] = {0x00};
+	unsigned char hdr_tail[] = {0x08,0x06,0x00,0x00,0x00};
+	unsigned char png_start[] = {0x89,'P','N','G','\r','\n',0x1A,'\n'};
 	struct buf ihdr = {0};
 	int block_length = (width*4 + 1);
 	struct buf idat = {0}, iend = {0};
@@ -357,7 +357,7 @@ struct buf make_png(void *d, int width, int height, int stride, data_cat_fn buf_
 		chksum = adler32_buf(chksum, row_data);
 		idat = buf_cat_str_data(idat, d, width*4);
 		free(row_data.data);
-		d = (char*)d + stride;
+		d = (unsigned char*)d + stride;
 	}
 	// be32 leaks
 	idat = buf_cat(idat, be32(adler32_fin(chksum)));
