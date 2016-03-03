@@ -325,16 +325,16 @@ struct buf zlib_block_length(int length)
  * by David Jones */
 struct buf make_png(void *d, int width, int height, int stride, data_cat_fn buf_cat_str_data)
 {
-	struct buf r = {0};
+	struct buf r = {};
 	unsigned char predictor[] = {0x0};
 	unsigned char zlib_prefix[] = {0x78,0x9c};
 	unsigned char zlib_final_block_prefix[] = {0x01};
 	unsigned char zlib_block_prefix[] = {0x00};
 	unsigned char hdr_tail[] = {0x08,0x06,0x00,0x00,0x00};
 	unsigned char png_start[] = {0x89,'P','N','G','\r','\n',0x1A,'\n'};
-	struct buf ihdr = {0};
+	struct buf ihdr = {};
 	int block_length = (width*4 + 1);
-	struct buf idat = {0}, iend = {0};
+	struct buf idat = {}, iend = {};
 	int i;
 	assert(block_length <= 65535);
 
@@ -350,7 +350,7 @@ struct buf make_png(void *d, int width, int height, int stride, data_cat_fn buf_
 
 	struct adler chksum = adler32_init();
 	for (i=0; i<height; i++) {
-		struct buf row_data = {0};
+		struct buf row_data = {};
 		if (i == height - 1)
 			idat = buf_cat_str(idat, zlib_final_block_prefix, sizeof(zlib_final_block_prefix));
 		else
