@@ -160,13 +160,20 @@ struct buf buf_cat_str_argb(struct buf b, void *abstract_src, int len)
 	while (len) {
 		/* we probably need to unpremultiply here */
 		unsigned char alpha = (*src >> 24) & 0xff;
-		unsigned char red   = (*src >> 16) & 0xff;
-		unsigned char green = (*src >> 8) & 0xff;
-		unsigned char blue  = (*src >> 0) & 0xff;
+		if (alpha) {
+		unsigned char red   = 255*((*src >> 16) & 0xff)/alpha;
+		unsigned char green = 255*((*src >> 8) & 0xff)/alpha;
+		unsigned char blue  = 255*((*src >> 0) & 0xff)/alpha;
 		*dest++ = red;
 		*dest++ = green;
 		*dest++ = blue;
 		*dest++ = alpha;
+		} else {
+			*dest++ = 0;
+			*dest++ = 0;
+			*dest++ = 0;
+			*dest++ = 0;
+		}
 		len-=4;
 		src++;
 	}
